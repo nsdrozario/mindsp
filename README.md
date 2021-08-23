@@ -11,3 +11,10 @@ Header-only DSP library
 - [ ] Higher-order IIR filter
 - [ ] FIR filter design
 - [ ] Biquad filter design
+    - [x] Low pass filter
+    - [x] High pass filter
+    - [x] Peak filter
+    - [ ] Low shelf filter
+    - [ ] High shelf filter
+    - [ ] Notch filter
+    - [ ] Band pass filter
