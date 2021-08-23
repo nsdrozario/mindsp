@@ -24,3 +24,4 @@ SOFTWARE.
 
 #include "../mindsp/util.hpp"
 #include "../mindsp/filter.hpp"
+#include "../mindsp/window.hpp"
