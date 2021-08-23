@@ -26,12 +26,74 @@ SOFTWARE.
 
 namespace mindsp {
     namespace filter {
+        
+        struct biquad_coefficients {
+
+            biquad_coefficients() {
+
+            }
+
+            biquad_coefficients(float a0, float a1, float a2, float b0, float b1, float b2) {
+                this->a0 = a0;
+                this->a1 = a1;
+                this->a2 = a2;
+                this->b0 = b0;
+                this->b1 = b1;
+                this->b2 = b2;
+            }
+
+            float a0 = 0.0f;
+            float a1 = 0.0f;
+            float a2 = 0.0f;
+            float b0 = 0.0f;
+            float b1 = 0.0f;
+            float b2 = 0.0f;
+        };
+
+        // direct form I biquad filter
+        // it works but it seems to get unstable easily
         class biquad_filter {
         public:
 
+            biquad_filter() { 
+                feedforward.resize(2);
+                feedback.resize(2);
+            }
+            
+            biquad_filter(biquad_coefficients c) {
+                coefficients = c;
+                feedforward.resize(2);
+                feedback.resize(2);
+            }
+
+            virtual ~biquad_filter() { }
+
+            void reset_state() {
+                feedback.resize(2);
+                feedforward.resize(2);
+            }
+
+            void set_coefficients(biquad_coefficients c) {
+                coefficients = c;
+                reset_state();
+            }
+
+            void apply(float *out, const float *in, std::size_t length) {
+                for (std::size_t i = 0; i < length; i++) {
+                    float output = coefficients.b0 * in[i];
+                    output += (coefficients.b1 * feedforward.read_tap(1)) + (coefficients.b2 * feedforward.read_tap(2))
+                              - (coefficients.a1 * feedback.read_tap(1)) - (coefficients.a2 * feedback.read_tap(2));
+                    output /= coefficients.a0;
+                    feedforward.push(in[i]);
+                    feedback.push(output); 
+                }
+            }
+
         private:
-            std::vector<float> feedforward;
-            std::vector<float> feedback;
+            biquad_coefficients coefficients;
+            util::ring_buffer<float> feedforward;
+            util::ring_buffer<float> feedback;
+
         };
     };
 }
