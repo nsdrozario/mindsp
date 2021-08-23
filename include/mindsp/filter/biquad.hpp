@@ -48,29 +48,37 @@ namespace mindsp {
             float b0 = 0.0f;
             float b1 = 0.0f;
             float b2 = 0.0f;
+
+            void normalize() {
+                if (a0 != 1.0f) {
+                    a1 /= a0;
+                    a2 /= a0;
+                    b0 /= a0;
+                    b1 /= a0;
+                    b2 /= a0;
+                    a0 = 1.0f;
+                }
+            }
         };
 
-        // direct form I biquad filter
+        // direct form II biquad filter
         // it works but it seems to get unstable easily
         class biquad_filter {
         public:
 
             biquad_filter() { 
-                feedforward.resize(2);
-                feedback.resize(2);
+                w.resize(2);
             }
             
             biquad_filter(biquad_coefficients c) {
                 coefficients = c;
-                feedforward.resize(2);
-                feedback.resize(2);
+                w.resize(2);
             }
 
             virtual ~biquad_filter() { }
 
             void reset_state() {
-                feedback.resize(2);
-                feedforward.resize(2);
+                w.resize(2);
             }
 
             void set_coefficients(biquad_coefficients c) {
@@ -79,6 +87,7 @@ namespace mindsp {
             }
 
             void apply(float *out, const float *in, std::size_t length) {
+            /*
                 for (std::size_t i = 0; i < length; i++) {
                     float output = coefficients.b0 * in[i];
                     output += (coefficients.b1 * feedforward.read_tap(1)) + (coefficients.b2 * feedforward.read_tap(2))
@@ -87,13 +96,22 @@ namespace mindsp {
                     feedforward.push(in[i]);
                     feedback.push(output); 
                 }
+            */
+                for (std::size_t i = 0; i < length; i++) {
+                    if (coefficients.a0 != 1.0f) {
+                        coefficients.normalize();
+                    }
+                    float w0 = in[i] - (coefficients.a1 * w.read_tap(1)) - (coefficients.a2 * w.read_tap(2));
+                    out[i] = (coefficients.b0 * w0) + (coefficients.b1 * w.read_tap(1)) + (coefficients.b2 * w.read_tap(2));
+                    w.push(w0); 
+                }
             }
 
         private:
             biquad_coefficients coefficients;
-            util::ring_buffer<float> feedforward;
-            util::ring_buffer<float> feedback;
+            util::ring_buffer<float> w;
 
         };
+
     };
 }
