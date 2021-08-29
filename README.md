@@ -15,14 +15,17 @@ Header-only DSP library
     - [x] Low pass filter
     - [x] High pass filter
     - [x] Peak filter
-    - [ ] Low shelf filter
-    - [ ] High shelf filter
+    - [x] Low shelf filter
+    - [x] High shelf filter
     - [ ] Notch filter
     - [ ] Band pass filter
 - Window functions
     - [x] Hann
-    - [ ] Hamming
-    - [ ] Blackman-Harris
+    - [x] Hamming
+    - [x] Blackman-Harris
+- [x] FFT
+    - Cooley-Tukey (radix-2)
+    - Automatically zero-pads non-power of 2 size inputs
 
 ## Examples
 
