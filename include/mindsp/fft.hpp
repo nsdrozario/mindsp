@@ -169,6 +169,7 @@ namespace mindsp {
         
         // you need to make sure your signal size is a power of two before sending it into this one since it deals with pointers instead of vector referenees
         // this fft is quite a bit faster than the one that uses std::complex though
+        // actually this fft has a bug so don't use it yet
         void split_fft(float *real_out, float *imag_out, float *real_in, float *imag_in, std::size_t size) {
 
             fft_helper_split(real_out, imag_out, real_in, imag_in, 1, size);
