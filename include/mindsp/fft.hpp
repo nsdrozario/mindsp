@@ -4,6 +4,8 @@
 #include <complex>
 #include <iostream>
 #include <stack>
+#include <map>
+#include <unordered_map>
 
 namespace mindsp {
     namespace fft {
@@ -60,10 +62,10 @@ namespace mindsp {
                 [ 1 -1 ] [ b ]     [ a - b ]
 
                 */
-               float norm_factor = 1.0f / std::sqrt(2);
+                // float norm_factor = 1.0f / std::sqrt(2);
 
-                out[0] = (in[0] + in[stride]) * norm_factor;
-                out[1] = (in[0] - in[stride]) * norm_factor;
+                out[0] = (in[0] + in[stride]);
+                out[1] = (in[0] - in[stride]);
 
             } else {
                 
@@ -74,6 +76,7 @@ namespace mindsp {
 
                 for (std::size_t k = 0; k < (n/2)-1; k++) {
                     // equal to e^(2pi * i * k / n) * odd[k]
+                    // apparently memoization with a map or even unordered_map makes performance worse somehow at both n=512 and n=8192 (16x oversampling)
                     std::complex<float> common_term = std::exp(std::complex<float>(0,-2.0f * 3.141592654f * k / static_cast<float>(n))) * odd[k];
                     out[k] = even[k] + common_term;
                     out[k+(n/2)] = even[k] - common_term;
@@ -114,6 +117,74 @@ namespace mindsp {
                 out[i] /= static_cast<float>(size);
             }
 
+        }
+
+        
+        void fft_helper_split(float *real_out, float *imag_out, float *real_in, float *imag_in, std::size_t stride, std::size_t n) {
+            if (n==2) {
+                if (imag_in == nullptr || imag_in == NULL) {
+                    real_out[0] = real_in[0] + real_in[stride];
+                    imag_out[0] = 0;
+
+                    real_out[1] = real_in[0] - real_in[stride];
+                    imag_out[1] = 0;
+                } else {
+                    real_out[0] = real_in[0] + real_in[stride];
+                    imag_out[0] = imag_in[0] + imag_in[stride];
+
+                    real_out[1] = real_in[0] - real_in[stride];
+                    imag_out[1] = imag_in[0] - imag_in[stride];
+                }
+            } else {
+                float *even_real = new float[n/2];
+                float *even_imag = new float[n/2];
+                float *odd_real = new float[n/2];
+                float *odd_imag = new float[n/2];
+                fft_helper_split(even_real, even_imag, real_in, imag_in, 2 * stride, n/2);
+                fft_helper_split(odd_real, odd_imag, real_in, imag_in, 2 * stride, n/2);
+                for (std::size_t k = 0; k < (n/2)-1; k++) {
+                    // Will use Euler's formula for calculating exp() of complex number
+                    // e^ix = cos(x) + i * sin(x)
+                    float common_term_real = std::cos(-2 * k * 3.141592654f / n) * odd_real[k];
+                    real_out[k] =  even_real[k] + common_term_real;
+                    real_out[k+(n/2)] = even_real[k] - common_term_real;
+                    
+                    if (imag_in == nullptr || imag_in == NULL) {
+                        imag_out[k] = 0;
+                        imag_out[k+(n/2)] = 0; 
+                        
+                    } else {
+                        float common_term_imag = std::sin(-2 * k * 3.141592654f / n) * odd_imag[k];
+                        imag_out[k] = even_imag[k] + common_term_imag;
+                        imag_out[k+(n/2)] = even_imag[k] - common_term_imag;
+                    }
+                }
+                
+                delete[] even_real;
+                delete[] even_imag;
+                delete[] odd_real;
+                delete[] odd_imag;
+            }
+        }
+        
+        // you need to make sure your signal size is a power of two before sending it into this one since it deals with pointers instead of vector referenees
+        // this fft is quite a bit faster than the one that uses std::complex though
+        void split_fft(float *real_out, float *imag_out, float *real_in, float *imag_in, std::size_t size) {
+
+            fft_helper_split(real_out, imag_out, real_in, imag_in, 1, size);
+
+        }
+
+        /**
+         * 
+         * Computes the inverse FFT (assuming only real input was given to the forward FFT)
+         * @param out Pointer to real-valued output array
+         * @param in Reference to vector of fft output
+         * @param samples_output Size of input (if not a power of two)
+         * 
+         */
+        void ifft(float *out, std::vector<std::complex<float>> &in, std::size_t samples_output) {
+            
         }
 
         /**
