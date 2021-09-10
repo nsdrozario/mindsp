@@ -25,8 +25,7 @@ Header-only DSP library
     - [x] Blackman-Harris
 - [x] FFT
     - Cooley-Tukey (radix-2)
-    - Automatically zero-pads non-power of 2 size inputs
-
+        - `std::complex<float>`-based FFT automatically resizes non-power of 2 size inputs
 ## Examples
 
 ### Biquad
