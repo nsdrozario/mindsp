@@ -141,23 +141,28 @@ namespace mindsp {
                 float *odd_real = new float[n/2];
                 float *odd_imag = new float[n/2];
                 fft_helper_split(even_real, even_imag, real_in, imag_in, 2 * stride, n/2);
-                fft_helper_split(odd_real, odd_imag, real_in, imag_in, 2 * stride, n/2);
+                if (imag_in == nullptr || imag_in == NULL) {
+                    fft_helper_split(odd_real, odd_imag, real_in+stride, nullptr, 2 * stride, n/2);
+                } else {
+                    fft_helper_split(odd_real, odd_imag, real_in+stride, imag_in+stride, 2 * stride, n/2);
+                }
                 for (std::size_t k = 0; k < (n/2)-1; k++) {
                     // Will use Euler's formula for calculating exp() of complex number
                     // e^ix = cos(x) + i * sin(x)
-                    float common_term_real = std::cos(-2 * k * 3.141592654f / n) * odd_real[k];
-                    real_out[k] =  even_real[k] + common_term_real;
-                    real_out[k+(n/2)] = even_real[k] - common_term_real;
+                    // (a+ib)(c+id) = ac + i*ad + i*bc - bd
+
+                    // e^(i * 2pi * k / n) * odd[k] 
+                    float exp_real = std::cos(-2 * static_cast<float>(k) * 3.141592654f / static_cast<float>(n));
+                    float exp_imag = std::sin(-2 * static_cast<float>(k) * 3.141592654f / static_cast<float>(n));
+
+                    float common_term_real = (exp_real * odd_real[k]) - (exp_imag * odd_imag[k]);
+                    float common_term_imag = (exp_real * odd_imag[k]) + (exp_imag * odd_real[k]);
                     
-                    if (imag_in == nullptr || imag_in == NULL) {
-                        imag_out[k] = 0;
-                        imag_out[k+(n/2)] = 0; 
-                        
-                    } else {
-                        float common_term_imag = std::sin(-2 * k * 3.141592654f / n) * odd_imag[k];
-                        imag_out[k] = even_imag[k] + common_term_imag;
-                        imag_out[k+(n/2)] = even_imag[k] - common_term_imag;
-                    }
+                    real_out[k] =  even_real[k] + common_term_real;
+                    imag_out[k] = even_imag[k] + common_term_imag;
+
+                    real_out[k+(n/2)] = even_real[k] - common_term_real;
+                    imag_out[k+(n/2)] = even_imag[k] - common_term_imag;
                 }
                 
                 delete[] even_real;
